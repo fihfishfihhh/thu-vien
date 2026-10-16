@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thư Viện Thông Minh - Vi Hoàng Dương 11A2</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Thư viện face-api.js để tính điểm mốc và đặc trưng khuôn mặt trên trình duyệt -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <!-- Thư viện html5-qrcode để đọc mã QR và mã vạch sách -->
+    <script defer src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <h1>THƯ VIỆN TRƯỜNG HỌC</h1>
+            <span class="badge">Dev: Vi Hoàng Dương 11A2</span>
+        </div>
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('student-tab')">Tra Cứu (Học Sinh)</button>
+            <button class="tab-btn" onclick="switchTab('scanner-tab')">Quầy Quét Tự Động</button>
+            <button class="tab-btn" onclick="switchTab('admin-tab')">Quản Trị (Dev/Thủ Thư)</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- =========================================================
+             TAB 1: TRA CỨU DÀNH CHO HỌC SINH (KHÔNG CẦN ĐĂNG NHẬP)
+             ========================================================= -->
+        <section id="student-tab" class="tab-content active">
+            <div class="grid-2">
+                <!-- Tra cứu thông tin mượn trả cá nhân -->
+                <div class="card">
+                    <h2>1. Tra Cứu Hồ Sơ Mượn Sách</h2>
+                    <p class="hint">Nhập họ tên (ví dụ: <b>Vi Hoàng Dương 11A2</b>) để xem sách đang mượn và hạn trả.</p>
+                    <div class="search-box">
+                        <input type="text" id="student-search-input" placeholder="Nhập họ tên học sinh..." value="Vi Hoàng Dương 11A2">
+                        <button onclick="searchStudentPublic()">Tra Cứu</button>
+                    </div>
+                    <div id="student-search-results" class="results-area"></div>
+                </div>
+
+                <!-- Tra cứu kho sách -->
+                <div class="card">
+                    <h2>2. Tra Cứu Kho Sách Thư Viện</h2>
+                    <p class="hint">Tìm theo tên sách để biết số lượng cuốn còn sẵn trong kho.</p>
+                    <div class="search-box">
+                        <input type="text" id="book-search-input" placeholder="Nhập tên sách (để trống để xem tất cả)...">
+                        <button onclick="searchBooksPublic()">Tìm Sách</button>
+                    </div>
+                    <div id="book-search-results" class="results-area"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =========================================================
+             TAB 2: QUẦY QUÉT KHUÔN MẶT + MÃ SÁCH (CẦN KHÓA DEV ĐỂ BẬT)
+             ========================================================= -->
+        <section id="scanner-tab" class="tab-content">
+            <div id="scanner-lock-notice" class="card warning-card">
+                <h3>Chế độ Quầy Quét yêu cầu xác thực Khóa Dev/Thủ thư</h3>
+                <p>Để ngăn học sinh tự ý mở máy quét giả mạo từ điện thoại cá nhân, vui lòng mở khóa ở mục Quản trị trước.</p>
+                <button onclick="switchTab('admin-tab')">Đến trang nhập Khóa Dev</button>
+            </div>
+
+            <div id="scanner-workspace" class="hidden">
+                <!-- Bảng hiển thị kết quả DUY NHẤT 2 TRẠNG THÁI: HỢP LỆ / KHÔNG HỢP LỆ -->
+                <div id="verdict-banner" class="verdict-banner neutral">
+                    <div id="verdict-title" class="verdict-title">ĐANG CHỜ NGƯỜI TIẾP THEO...</div>
+                    <div id="verdict-reason" class="verdict-reason">Đứng trước camera và đưa mã QR/mã vạch sách vào khung quét.</div>
+                </div>
+
+                <div class="scanner-grid">
+                    <!-- Khung Camera Khuôn mặt + Lớp phủ chống mạo danh -->
+                    <div class="card camera-card">
+                        <div class="card-header-inline">
+                            <h3>Camera Khuôn Mặt</h3>
+                            <span id="fps-counter" class="fps-badge">FPS: --</span>
+                        </div>
+                        <div class="video-wrapper">
+                            <video id="face-video" autoplay muted playsinline></video>
+                            <canvas id="face-overlay"></canvas>
+                            <!-- Hình mờ thử thách chống mạo danh -->
+                            <div id="challenge-watermark" class="watermark hidden">
+                                <div class="watermark-icon">!</div>
+                                <div id="watermark-text">HÁ MIỆNG RỘNG</div>
+                                <div class="watermark-sub">Xác thực người thật chống ảnh giả</div>
+                            </div>
+                            <!-- Cảnh báo đứng quá xa -->
+                            <div id="distance-warning" class="distance-alert hidden">
+                                ĐẾN GẦN HƠN (Độ chính xác &le; 10%)
+                            </div>
+                        </div>
+                        <div class="scanner-controls">
+                            <button id="btn-start-scan" class="btn-primary" onclick="startScannerMode()">Bắt Đầu Camera Quét</button>
+                            <button id="btn-stop-scan" class="btn-danger hidden" onclick="stopScannerMode()">Tắt Camera</button>
+                        </div>
+                    </div>
+
+                    <!-- Khung Quét Mã Sách QR / Barcode -->
+                    <div class="card">
+                        <h3>Đọc Mã QR / Mã Vạch Sách</h3>
+                        <div id="qr-reader" class="qr-box"></div>
+                        <div class="manual-code-box">
+                            <label>Hoặc nhập/quét bằng súng mã vạch:</label>
+                            <div class="search-box">
+                                <input type="text" id="manual-book-code" placeholder="VD: PY-001 hoặc CPP-001">
+                                <button onclick="triggerBookCodeScan()">Xác Nhận Mã Sách</button>
+                            </div>
+                        </div>
+                        <div id="scanned-book-preview" class="book-preview hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =========================================================
+             TAB 3: QUẢN TRỊ DÀNH CHO DEV / THỦ THƯ
+             ========================================================= -->
+        <section id="admin-tab" class="tab-content">
+            <!-- Khung đăng nhập khóa riêng -->
+            <div id="dev-login-card" class="card">
+                <h2>Đăng Nhập Quyền Dev / Thủ Thư</h2>
+                <p class="hint">Mọi thao tác bên dưới đều được kiểm tra khóa trực tiếp trên máy chủ Python.</p>
+                <div class="search-box">
+                    <input type="password" id="dev-key-input" placeholder="Nhập khóa bí mật (Mặc định: Duong11A2@Secret)">
+                    <button onclick="authenticateDev()">Mở Khóa Quyền Dev</button>
+                </div>
+                <p id="auth-status-msg" class="error-text"></p>
+            </div>
+
+            <!-- Bảng điều khiển sau khi mở khóa -->
+            <div id="dev-dashboard" class="hidden">
+                <div class="grid-2">
+                    <!-- 1. Đăng ký khuôn mặt học sinh (Nhiều ảnh 1 người) -->
+                    <div class="card">
+                        <h2>1. Đăng Ký Khuôn Mặt Học Sinh</h2>
+                        <p class="hint">Chụp nhiều góc mặt (thẳng, nghiêng nhẹ, đeo kính) cho mỗi học sinh để tăng độ chính xác.</p>
+                        <label>Họ tên & Lớp:</label>
+                        <input type="text" id="reg-student-name" value="Vi Hoàng Dương 11A2" placeholder="VD: Vi Hoàng Dương 11A2">
+
+                        <div class="enroll-cam-box">
+                            <video id="enroll-video" autoplay muted playsinline></video>
+                        </div>
+                        <div class="btn-group">
+                            <button onclick="startEnrollCamera()">1. Bật Camera Mẫu</button>
+                            <button onclick="captureFaceSample()">2. Chụp Mẫu Mặt (<span id="sample-count">0</span>)</button>
+                        </div>
+
+                        <label>Ảnh đại diện hồ sơ (Tùy chọn, tối đa 2MB):</label>
+                        <input type="file" id="reg-student-photo" accept="image/jpeg,image/png,image/webp">
+
+                        <button class="btn-primary full-width" onclick="submitStudentRegistration()">3. Lưu Dữ Liệu Lên Máy Chủ</button>
+                        <p id="reg-student-msg" class="status-msg"></p>
+                    </div>
+
+                    <!-- 2. Thêm sách, tạo mã riêng & tạo QR -->
+                    <div class="card">
+                        <h2>2. Thêm Sách & Tạo Mã Riêng Từng Cuốn</h2>
+                        <label>Tên đầu sách:</label>
+                        <input type="text" id="add-book-title" placeholder="VD: Tin Học 11 - Cánh Diều">
+
+                        <label>Danh sách mã riêng từng cuốn (cách nhau dấu phẩy):</label>
+                        <div class="search-box">
+                            <input type="text" id="add-book-codes" placeholder="VD: TH11-001, TH11-002">
+                            <button onclick="autoGenerateCodes()">Tự Sinh Mã</button>
+                        </div>
+
+                        <label>Ảnh bìa sách đi kèm (Tùy chọn, JPG/PNG/WEBP &le; 2MB):</label>
+                        <input type="file" id="add-book-cover" accept="image/jpeg,image/png,image/webp">
+
+                        <button class="btn-primary full-width" onclick="submitNewBook()">Lưu Sách & Tạo Nhãn Mã</button>
+                        <p id="add-book-msg" class="status-msg"></p>
+                        <div id="Printable-qr-labels" class="qr-labels-grid"></div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <!-- 3. Thủ thư xác nhận trả hộ -->
+                    <div class="card">
+                        <h2>3. Thủ Thư Xác Nhận Trả Sách Hộ</h2>
+                        <p class="hint">Dùng khi học sinh gửi bạn trả hộ hoặc không thể có mặt trước camera.</p>
+                        <input type="text" id="override-book-code" placeholder="Nhập mã cuốn sách (VD: PY-001)">
+                        <input type="text" id="override-note" placeholder="Lý do trả hộ (VD: Bạn cùng lớp trả giúp)">
+                        <button class="btn-primary" onclick="submitLibrarianReturn()">Xác Nhận Trả Hộ</button>
+                        <p id="override-msg" class="status-msg"></p>
+                    </div>
+
+                    <!-- 4. Sao lưu, Phục hồi & Xuất Log -->
+                    <div class="card">
+                        <h2>4. Sao Lưu, Phục Hồi & Xuất Nhật Ký</h2>
+                        <div class="btn-group">
+                            <button onclick="loadAuditLogs()">Xem Nhật Ký Mới Nhất</button>
+                            <button onclick="exportLogsCSV()">Tải File Log (.CSV)</button>
+                            <button onclick="downloadBackupDB()">Tải Bản Sao Lưu (.DB)</button>
+                        </div>
+                        <hr>
+                        <label>Phục hồi dữ liệu từ file <code>.db</code>:</label>
+                        <div class="search-box">
+                            <input type="file" id="restore-db-file" accept=".db">
+                            <button class="btn-danger" onclick="restoreDatabase()">Phục Hồi</button>
+                        </div>
+                        <p id="backup-msg" class="status-msg"></p>
+                    </div>
+                </div>
+
+                <!-- Bảng hiển thị Log -->
+                <div class="card">
+                    <h2>Nhật Ký Mượn Trả (Múi Giờ Việt Nam)</h2>
+                    <div id="audit-log-table-wrapper" class="table-scroll"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
