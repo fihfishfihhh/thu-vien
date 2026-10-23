@@ -3,6 +3,12 @@
   --border-dim: rgba(255, 255, 255, 0.08);
   --border-bright: rgba(255, 255, 255, 0.28);
 }
+html {
+  font-size: 17px; /* web to hơn */
+}
+@media (min-width: 1600px) {
+  html { font-size: 19px; }
+}
 * {
   box-sizing: border-box;
 }
@@ -26,13 +32,6 @@ body {
 .fade-black-surface:hover {
   border-color: var(--border-bright);
 }
-.viewport-fade-vignette {
-  background:
-    radial-gradient(circle at center, rgba(16, 16, 20, 0.2) 0%, rgba(0, 0, 0, 0.88) 85%, #000000 100%);
-}
-.bottom-fade-mask {
-  background: linear-gradient(0deg, #000000 0%, rgba(0, 0, 0, 0.75) 45%, transparent 100%);
-}
 /* Đèn tín hiệu Xanh / Đỏ gọn ở góc */
 .lamp-dot-green-on {
   background: radial-gradient(circle, #4ade80 0%, #16a34a 70%, #052e16 100%);
@@ -43,20 +42,6 @@ body {
   background: radial-gradient(circle, #f87171 0%, #dc2626 70%, #450a0a 100%);
   box-shadow: 0 0 24px rgba(248, 113, 113, 0.95);
   border-color: #fca5a5;
-}
-@keyframes scan-line {
-  0% { top: 6%; opacity: 0.12; }
-  50% { top: 92%; opacity: 0.55; }
-  100% { top: 6%; opacity: 0.12; }
-}
-.scanner-laser {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent);
-  animation: scan-line 3.4s infinite ease-in-out;
-  pointer-events: none;
 }
 ::-webkit-scrollbar {
   width: 4px;

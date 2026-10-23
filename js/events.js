@@ -29,6 +29,10 @@ function setupEventListeners() {
 
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
       document.getElementById(`tab-${target}`).classList.remove('hidden');
+
+      // Rời tab nào thì tắt camera tab đó
+      if (target !== 'scan') stopScanCamera();
+      if (target !== 'logs') stopEnrollCamera();
     });
   });
 
@@ -105,43 +109,18 @@ function setupEventListeners() {
   document.getElementById('btnExecuteScan').addEventListener('click', executeScanTransaction);
   document.getElementById('btnResetBuffer').addEventListener('click', () => clearScannerBuffer(false));
 
-  // Camera thật
-  let mediaStream = null;
-  document.getElementById('btnStartCamera').addEventListener('click', async (e) => {
-    const video = document.getElementById('cameraVideo');
-    const label = document.getElementById('cameraModeLabel');
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(t => t.stop());
-      mediaStream = null;
-      video.classList.add('hidden');
-      label.textContent = 'TERMINAL 01';
-      e.currentTarget.textContent = 'CAMERA';
-      return;
-    }
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      video.srcObject = mediaStream;
-      video.classList.remove('hidden');
-      document.getElementById('uploadedScanPreview').classList.add('hidden');
-      label.textContent = 'LIVE CAMERA';
-      e.currentTarget.textContent = 'TẮT CAMERA';
-    } catch (err) {
-      showToast('Không tìm thấy thiết bị Camera', 'error');
-    }
+  // Camera thật + nhận diện khuôn mặt
+  document.getElementById('btnStartCamera').addEventListener('click', () => {
+    if (scanStream) stopScanCamera();
+    else startScanCamera();
   });
+  document.getElementById('btnEmptyStartCamera').addEventListener('click', startScanCamera);
 
   // Ảnh quét tải lên
   document.getElementById('inputScanPhoto').addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = document.getElementById('uploadedScanPreview');
-      img.src = reader.result;
-      img.classList.remove('hidden');
-      document.getElementById('cameraModeLabel').textContent = 'IMAGE LOADED';
-    };
-    reader.readAsDataURL(file);
+    e.target.value = '';
+    if (file) scanPhotoFile(file);
   });
 
   // Kho sách
@@ -401,23 +380,7 @@ function setupEventListeners() {
   });
 
   // Quản trị Học Sinh & Log
-  document.getElementById('formAddStudentFace').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name = document.getElementById('inputNewStudentName').value.trim();
-    const className = document.getElementById('inputNewStudentClass').value.trim().toUpperCase();
-    if (!name || !className) return;
-
-    state.students.push({
-      id: 'HS' + String(state.students.length + 1).padStart(3, '0'),
-      name,
-      className,
-      registered: true
-    });
-    e.target.reset();
-    saveState();
-    renderAll();
-    showToast('Đã lưu học sinh', 'success');
-  });
+  setupEnrollEvents();
 
   document.getElementById('btnClearAllData').addEventListener('click', () => {
     state.students = [];

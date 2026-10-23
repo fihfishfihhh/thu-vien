@@ -92,3 +92,9 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 300);
   }, 2600);
 }
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}

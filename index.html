@@ -21,7 +21,7 @@
        HEADER TỐI GIẢN (KHÔNG ICON)
   ====================================================================== -->
   <header class="sticky top-0 z-40 backdrop-blur-md bg-gradient-to-b from-black via-black/80 to-transparent border-b border-white/10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+    <div class="max-w-[1680px] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
       <button id="btnLogoHome" type="button" class="bg-white text-black font-mono-tech font-bold tracking-widest text-xs px-3.5 py-1.5 rounded hover:bg-neutral-200 transition">
         SCHOOL : LIB
       </button>
@@ -66,14 +66,14 @@
   <!-- =====================================================================
        MAIN CONTENT
   ====================================================================== -->
-  <main class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
+  <main class="relative z-10 flex-1 max-w-[1680px] w-full mx-auto px-4 sm:px-8 py-6">
 
     <!-- ===================================================================
          TAB 1: MÀN HÌNH QUÉT RẤT TO + ĐÈN ĐỎ/XANH Ở MỘT GÓC
          (Không hiển thị cấu trúc dữ liệu nội bộ cho học sinh)
     ==================================================================== -->
-    <section id="tab-scan" class="tab-panel space-y-5">
-      <!-- Thanh công cụ mỏng phía trên khung quét -->
+    <section id="tab-scan" class="tab-panel space-y-4">
+      <!-- Thanh công cụ -->
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <button id="btnGateBorrow" type="button" class="px-4 py-1.5 rounded-full text-xs font-mono-tech font-bold bg-white text-black transition">
@@ -86,8 +86,9 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <span id="faceModelStatus" class="font-mono-tech text-[11px] text-neutral-500 mr-1"></span>
           <button id="btnStartCamera" type="button" class="px-3.5 py-1.5 rounded-full border border-white/15 hover:border-white/50 text-xs font-mono-tech text-neutral-300 transition">
-            CAMERA
+            BẬT CAMERA
           </button>
           <label for="inputScanPhoto" class="cursor-pointer px-3.5 py-1.5 rounded-full border border-white/15 hover:border-white/50 text-xs font-mono-tech text-neutral-300 transition">
             ẢNH QUÉT
@@ -99,69 +100,66 @@
         </div>
       </div>
 
-      <!-- KHUNG QUÉT TRUNG TÂM RẤT LỚN (MASSIVE SCAN VIEWPORT) -->
-      <div class="relative w-full h-[64vh] min-h-[440px] rounded-3xl overflow-hidden border border-white/15 viewport-fade-vignette flex items-center justify-center">
-        <!-- Video Webcam -->
-        <video id="cameraVideo" autoplay playsinline muted class="hidden w-full h-full object-cover opacity-85"></video>
-        <!-- Ảnh tải lên -->
-        <img id="uploadedScanPreview" alt="" class="hidden w-full h-full object-cover opacity-75" />
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-4">
+        <!-- KHUNG QUÉT: video + canvas vẽ ô khoanh khuôn mặt -->
+        <div class="relative rounded-2xl overflow-hidden border border-white/15 bg-black h-[62vh] xl:h-[76vh] min-h-[420px]">
+          <video id="cameraVideo" autoplay playsinline muted class="hidden absolute inset-0 w-full h-full object-contain"></video>
+          <img id="uploadedScanPreview" alt="" class="hidden absolute inset-0 w-full h-full object-contain" />
+          <canvas id="scanOverlay" class="absolute inset-0 w-full h-full object-contain pointer-events-none"></canvas>
 
-        <!-- Tia quét mảnh -->
-        <div class="scanner-laser"></div>
-
-        <!-- CỤM ĐÈN XANH / ĐỎ CHỈ Ở MỘT GÓC (GÓC TRÊN BÊN PHẢI) -->
-        <div class="absolute top-5 right-5 z-20 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-black/85 border border-white/15 backdrop-blur-md">
-          <div class="flex items-center gap-2">
-            <div id="lampRedDot" class="w-4 h-4 rounded-full bg-rose-950/50 border border-rose-800/40 transition-all duration-300" title="Đèn Đỏ"></div>
-            <div id="lampGreenDot" class="w-4 h-4 rounded-full bg-emerald-950/50 border border-emerald-800/40 transition-all duration-300" title="Đèn Xanh"></div>
-          </div>
-          <span id="cornerSignalText" class="font-mono-tech text-[11px] tracking-wider uppercase text-neutral-400">
-            CHỜ QUÉT
-          </span>
-        </div>
-
-        <!-- Trạng thái Camera ở góc trên bên trái -->
-        <div id="cameraModeLabel" class="absolute top-5 left-5 z-20 font-mono-tech text-[11px] tracking-widest uppercase text-neutral-500">
-          TERMINAL 01
-        </div>
-
-        <!-- KHUNG VUÔNG NHẬN DIỆN KHUÔN MẶT Ở GIỮA -->
-        <div id="faceBoundingBox" class="relative w-64 h-64 sm:w-72 sm:h-72 border border-white/25 rounded-2xl flex flex-col justify-between p-4 bg-black/25 backdrop-blur-[2px] transition-all duration-300">
-          <div class="flex justify-between items-center font-mono-tech text-[10px] text-neutral-400">
-            <span id="hudFaceBadge">FACE ID</span>
-            <span id="hudFaceStatusText">IDLE</span>
-          </div>
-
-          <div class="my-auto text-center space-y-1">
-            <div id="hudStudentName" class="text-base font-medium text-white tracking-wide">
-              Chưa chọn học sinh
-            </div>
-            <div id="hudStudentClass" class="font-mono-tech text-xs text-neutral-400">
-              ---
-            </div>
-          </div>
-
-          <div class="flex justify-between items-center font-mono-tech text-[10px] text-neutral-500 border-t border-white/10 pt-2">
-            <span id="hudBookCode">MÃ SÁCH: ---</span>
-            <span id="hudBookTitle" class="truncate max-w-[130px]">---</span>
-          </div>
-        </div>
-
-        <!-- Thanh điều khiển quét nằm gọn dưới đáy khung lớn (với lớp đen fade-out) -->
-        <div class="absolute inset-x-0 bottom-0 p-5 bottom-fade-mask">
-          <div class="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-            <select id="selectFaceStudent" class="sm:col-span-4 bg-black/90 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
-              <!-- Populated by JS -->
-            </select>
-            <select id="selectBookBarcode" class="sm:col-span-4 bg-black/90 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
-              <!-- Populated by JS -->
-            </select>
-            <input id="inputManualBarcode" type="text" placeholder="Nhập mã QR sách..." class="sm:col-span-2 bg-black/90 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs font-mono-tech text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
-            <button id="btnExecuteScan" type="button" class="sm:col-span-2 py-2.5 px-4 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
-              XÁC THỰC
+          <div id="scanEmptyState" class="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-6">
+            <p class="text-sm text-neutral-400">Bật camera để hệ thống tự nhận diện khuôn mặt</p>
+            <button id="btnEmptyStartCamera" type="button" class="px-6 py-2.5 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
+              BẬT CAMERA
             </button>
           </div>
+
+          <div id="cameraModeLabel" class="absolute top-4 left-4 font-mono-tech text-[11px] tracking-widest uppercase text-neutral-500">
+            TERMINAL 01
+          </div>
+
+          <!-- Đèn xanh / đỏ ở góc -->
+          <div class="absolute top-4 right-4 flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/80 border border-white/15 backdrop-blur-md">
+            <div class="flex items-center gap-2">
+              <div id="lampRedDot" class="w-4 h-4 rounded-full bg-rose-950/50 border border-rose-800/40 transition-all duration-300" title="Đèn Đỏ"></div>
+              <div id="lampGreenDot" class="w-4 h-4 rounded-full bg-emerald-950/50 border border-emerald-800/40 transition-all duration-300" title="Đèn Xanh"></div>
+            </div>
+            <span id="cornerSignalText" class="font-mono-tech text-[11px] tracking-wider uppercase text-neutral-400">
+              CHỜ QUÉT
+            </span>
+          </div>
         </div>
+
+        <!-- BẢNG THÔNG TIN BÊN PHẢI -->
+        <aside class="fade-black-surface rounded-2xl p-5 space-y-5 self-start">
+          <div class="space-y-2.5">
+            <div class="font-mono-tech text-[11px] text-neutral-500 uppercase">Học sinh</div>
+            <div class="flex items-center gap-3 bg-black border border-white/10 rounded-xl p-3">
+              <img id="hudStudentPhoto" alt="" class="hidden w-14 h-14 rounded-xl object-cover border border-white/10" />
+              <div id="hudStudentPhotoEmpty" class="w-14 h-14 rounded-xl bg-white/5 border border-white/10"></div>
+              <div class="min-w-0">
+                <div id="hudStudentName" class="text-base font-medium text-white truncate">Chưa nhận diện</div>
+                <div id="hudStudentClass" class="font-mono-tech text-xs text-neutral-400">---</div>
+              </div>
+            </div>
+            <select id="selectFaceStudent" class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <div class="space-y-2.5">
+            <div class="font-mono-tech text-[11px] text-neutral-500 uppercase">Sách</div>
+            <select id="selectBookBarcode" class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
+              <!-- Populated by JS -->
+            </select>
+            <input id="inputManualBarcode" type="text" placeholder="Hoặc nhập mã QR sách..." class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs font-mono-tech text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+            <div id="hudBookTitle" class="font-mono-tech text-xs text-neutral-400 truncate">---</div>
+          </div>
+
+          <button id="btnExecuteScan" type="button" class="w-full py-3 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
+            XÁC THỰC
+          </button>
+        </aside>
       </div>
     </section>
 
@@ -306,12 +304,38 @@
     <section id="tab-logs" class="tab-panel hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Thêm Học Sinh Vào Database Nhận Diện -->
-        <div class="lg:col-span-5 space-y-4">
+        <div class="lg:col-span-6 space-y-4">
           <div class="fade-black-surface rounded-2xl p-5 space-y-4">
-            <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">Thêm dữ liệu học sinh (&lt;face&gt;data)</h2>
+            <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">Thêm học sinh &amp; khuôn mặt</h2>
             <form id="formAddStudentFace" class="space-y-3">
-              <input id="inputNewStudentName" type="text" placeholder="Họ và tên học sinh" required class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
-              <input id="inputNewStudentClass" type="text" placeholder="Lớp (VD: 11A1)" required class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input id="inputNewStudentName" type="text" placeholder="Họ và tên học sinh" required class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+                <input id="inputNewStudentClass" type="text" placeholder="Lớp (VD: 11A1)" required class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+              </div>
+
+              <div class="relative rounded-xl overflow-hidden border border-white/15 bg-black h-72">
+                <video id="enrollVideo" autoplay playsinline muted class="hidden absolute inset-0 w-full h-full object-contain"></video>
+                <canvas id="enrollOverlay" class="absolute inset-0 w-full h-full object-contain pointer-events-none"></canvas>
+                <div id="enrollEmpty" class="absolute inset-0 flex items-center justify-center text-xs text-neutral-500 font-mono-tech">Camera đang tắt</div>
+                <div id="enrollHint" class="absolute bottom-2 left-3 font-mono-tech text-[11px] text-neutral-400"></div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="btnEnrollCamera" type="button" class="px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white text-xs font-mono-tech text-neutral-200 transition">
+                  BẬT CAMERA
+                </button>
+                <button id="btnEnrollCapture" type="button" class="px-3.5 py-1.5 rounded-full bg-white text-black font-mono-tech font-bold text-xs hover:bg-neutral-200 transition">
+                  CHỤP
+                </button>
+                <label for="inputEnrollPhoto" class="cursor-pointer px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white text-xs font-mono-tech text-neutral-200 transition">
+                  TẢI ẢNH
+                </label>
+                <input id="inputEnrollPhoto" type="file" accept="image/*" class="hidden" />
+                <span id="enrollCounter" class="font-mono-tech text-[11px] text-neutral-500 ml-auto">0/5 ảnh (nên chụp 3)</span>
+              </div>
+
+              <div id="enrollSamples" class="flex flex-wrap gap-2 min-h-[3.5rem]"></div>
+
               <button type="submit" class="w-full py-2.5 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase hover:bg-neutral-200 transition">
                 LƯU HỌC SINH
               </button>
@@ -332,7 +356,7 @@
         </div>
 
         <!-- Nhật ký Mượn / Trả & Xuất Log -->
-        <div class="lg:col-span-7 space-y-4">
+        <div class="lg:col-span-6 space-y-4">
           <div class="fade-black-surface rounded-2xl p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-white/10 pb-3">
               <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">Lịch sử lưu trữ</h2>
@@ -465,11 +489,14 @@
   <!-- =====================================================================
        SCRIPT HỆ THỐNG (ĐÃ XOÁ SẠCH DỮ LIỆU ẢO & ICON, BẢO MẬT BẰNG KEY)
   ====================================================================== -->
+  <script src="lib/face-api.js"></script>
   <script src="js/state.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/face.js"></script>
   <script src="js/scanner.js"></script>
   <script src="js/inventory.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/enroll.js"></script>
   <script src="js/events.js"></script>
   <script src="js/background.js"></script>
   <script src="js/main.js"></script>

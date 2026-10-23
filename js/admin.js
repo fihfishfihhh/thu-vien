@@ -97,11 +97,15 @@ endl;`
   if (state.students.length === 0) {
     pills.innerHTML = `<span class="text-xs font-mono-tech text-neutral-600">Chưa có học sinh nào.</span>`;
   } else {
-    pills.innerHTML = state.students.map(s =>
-      `<span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 font-mono-tech text-[11px] text-neutral-300">
-        ${s.name} (${s.className})
-      </span>`
-    ).join('');
+    pills.innerHTML = state.students.map(s => `
+      <span class="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-white/5 border border-white/10 font-mono-tech text-[11px] text-neutral-300">
+        ${s.photo
+          ? `<img src="${s.photo}" alt="" class="w-6 h-6 rounded-full object-cover" />`
+          : `<span class="w-6 h-6 rounded-full bg-white/10"></span>`}
+        ${escapeHtml(s.name)} (${escapeHtml(s.className)})${s.descriptors && s.descriptors.length ? '' : ' · chưa có mặt'}
+        <button type="button" data-delete-student="${s.id}" class="text-neutral-500 hover:text-rose-400 leading-none" title="Xoá học sinh">×</button>
+      </span>
+    `).join('');
   }
 }
 
