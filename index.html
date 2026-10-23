@@ -1,218 +1,477 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thư Viện Thông Minh - Vi Hoàng Dương 11A2</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <!-- Thư viện face-api.js để tính điểm mốc và đặc trưng khuôn mặt trên trình duyệt -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
-    <!-- Thư viện html5-qrcode để đọc mã QR và mã vạch sách -->
-    <script defer src="https://unpkg.com/html5-qrcode"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCHOOL : LIB</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-    <header class="app-header">
-        <div class="brand">
-            <h1>THƯ VIỆN TRƯỜNG HỌC</h1>
-            <span class="badge">Dev: Vi Hoàng Dương 11A2</span>
+<body class="min-h-screen flex flex-col selection:bg-white selection:text-black">
+
+  <!-- =====================================================================
+       BACKGROUND CANVAS: HẠT RƠI NHƯ MƯA (ÍT VÀ MỜ)
+  ====================================================================== -->
+  <canvas id="bgRainCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- =====================================================================
+       HEADER TỐI GIẢN (KHÔNG ICON)
+  ====================================================================== -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-gradient-to-b from-black via-black/80 to-transparent border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+      <button id="btnLogoHome" type="button" class="bg-white text-black font-mono-tech font-bold tracking-widest text-xs px-3.5 py-1.5 rounded hover:bg-neutral-200 transition">
+        SCHOOL : LIB
+      </button>
+
+      <!-- Điều hướng chính -->
+      <nav class="flex items-center gap-1.5 overflow-x-auto py-1" aria-label="Điều hướng">
+        <button type="button" data-tab="scan" class="nav-tab px-3.5 py-1.5 rounded-full text-xs font-mono-tech uppercase transition bg-white text-black font-bold">
+          QUÉT
+        </button>
+        <button type="button" data-tab="inventory" class="nav-tab px-3.5 py-1.5 rounded-full text-xs font-mono-tech uppercase transition text-neutral-400 hover:text-white">
+          KHO SÁCH
+        </button>
+        <button type="button" data-tab="renew" class="nav-tab px-3.5 py-1.5 rounded-full text-xs font-mono-tech uppercase transition text-neutral-400 hover:text-white">
+          GIA HẠN <span id="badgePendingRenew" class="ml-1 text-[10px] text-neutral-500">0</span>
+        </button>
+        <!-- 2 Tab chỉ hiện khi mở khoá Quản Lý -->
+        <button id="tabBtnOverdue" type="button" data-tab="overdue" class="nav-tab hidden px-3.5 py-1.5 rounded-full text-xs font-mono-tech uppercase transition text-neutral-400 hover:text-white">
+          QUÁ HẠN <span id="badgeOverdueCount" class="ml-1 text-[10px] text-rose-400">0</span>
+        </button>
+        <button id="tabBtnLogs" type="button" data-tab="logs" class="nav-tab hidden px-3.5 py-1.5 rounded-full text-xs font-mono-tech uppercase transition text-neutral-400 hover:text-white">
+          QUẢN TRỊ &amp; LOG
+        </button>
+      </nav>
+
+      <!-- Phải: Âm thanh & Chế độ Quản Lý (Yêu cầu Key) -->
+      <div class="flex items-center gap-2 font-mono-tech text-[11px]">
+        <button id="btnToggleSound" type="button" class="px-3 py-1 rounded-full border border-white/15 text-neutral-400 hover:text-white hover:border-white/40 transition">
+          ÂM: BẬT
+        </button>
+        <div class="flex items-center bg-neutral-950 border border-white/15 rounded-full p-0.5">
+          <button id="btnRoleStudent" type="button" class="px-3 py-1 rounded-full bg-white text-black font-bold transition">
+            HỌC SINH
+          </button>
+          <button id="btnRoleAdmin" type="button" class="px-3 py-1 rounded-full text-neutral-400 hover:text-white transition">
+            QUẢN LÝ
+          </button>
         </div>
-        <nav class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('student-tab')">Tra Cứu (Học Sinh)</button>
-            <button class="tab-btn" onclick="switchTab('scanner-tab')">Quầy Quét Tự Động</button>
-            <button class="tab-btn" onclick="switchTab('admin-tab')">Quản Trị (Dev/Thủ Thư)</button>
-        </nav>
-    </header>
+      </div>
+    </div>
+  </header>
 
-    <main class="container">
-        <!-- =========================================================
-             TAB 1: TRA CỨU DÀNH CHO HỌC SINH (KHÔNG CẦN ĐĂNG NHẬP)
-             ========================================================= -->
-        <section id="student-tab" class="tab-content active">
-            <div class="grid-2">
-                <!-- Tra cứu thông tin mượn trả cá nhân -->
-                <div class="card">
-                    <h2>1. Tra Cứu Hồ Sơ Mượn Sách</h2>
-                    <p class="hint">Nhập họ tên (ví dụ: <b>Vi Hoàng Dương 11A2</b>) để xem sách đang mượn và hạn trả.</p>
-                    <div class="search-box">
-                        <input type="text" id="student-search-input" placeholder="Nhập họ tên học sinh..." value="Vi Hoàng Dương 11A2">
-                        <button onclick="searchStudentPublic()">Tra Cứu</button>
-                    </div>
-                    <div id="student-search-results" class="results-area"></div>
-                </div>
+  <!-- =====================================================================
+       MAIN CONTENT
+  ====================================================================== -->
+  <main class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6">
 
-                <!-- Tra cứu kho sách -->
-                <div class="card">
-                    <h2>2. Tra Cứu Kho Sách Thư Viện</h2>
-                    <p class="hint">Tìm theo tên sách để biết số lượng cuốn còn sẵn trong kho.</p>
-                    <div class="search-box">
-                        <input type="text" id="book-search-input" placeholder="Nhập tên sách (để trống để xem tất cả)...">
-                        <button onclick="searchBooksPublic()">Tìm Sách</button>
-                    </div>
-                    <div id="book-search-results" class="results-area"></div>
-                </div>
+    <!-- ===================================================================
+         TAB 1: MÀN HÌNH QUÉT RẤT TO + ĐÈN ĐỎ/XANH Ở MỘT GÓC
+         (Không hiển thị cấu trúc dữ liệu nội bộ cho học sinh)
+    ==================================================================== -->
+    <section id="tab-scan" class="tab-panel space-y-5">
+      <!-- Thanh công cụ mỏng phía trên khung quét -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="btnGateBorrow" type="button" class="px-4 py-1.5 rounded-full text-xs font-mono-tech font-bold bg-white text-black transition">
+            CỔNG MƯỢN
+          </button>
+          <button id="btnGateReturn" type="button" class="hidden px-4 py-1.5 rounded-full text-xs font-mono-tech text-neutral-400 border border-white/15 hover:text-white transition">
+            CỔNG TRẢ (+1)
+          </button>
+          <span id="liveVnClock" class="font-mono-tech text-xs text-neutral-500 ml-2">--:--:--</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btnStartCamera" type="button" class="px-3.5 py-1.5 rounded-full border border-white/15 hover:border-white/50 text-xs font-mono-tech text-neutral-300 transition">
+            CAMERA
+          </button>
+          <label for="inputScanPhoto" class="cursor-pointer px-3.5 py-1.5 rounded-full border border-white/15 hover:border-white/50 text-xs font-mono-tech text-neutral-300 transition">
+            ẢNH QUÉT
+          </label>
+          <input id="inputScanPhoto" type="file" accept="image/*" class="hidden" />
+          <button id="btnResetBuffer" type="button" class="px-3.5 py-1.5 rounded-full border border-white/15 hover:border-white/50 text-xs font-mono-tech text-neutral-400 transition">
+            LÀM MỚI
+          </button>
+        </div>
+      </div>
+
+      <!-- KHUNG QUÉT TRUNG TÂM RẤT LỚN (MASSIVE SCAN VIEWPORT) -->
+      <div class="relative w-full h-[64vh] min-h-[440px] rounded-3xl overflow-hidden border border-white/15 viewport-fade-vignette flex items-center justify-center">
+        <!-- Video Webcam -->
+        <video id="cameraVideo" autoplay playsinline muted class="hidden w-full h-full object-cover opacity-85"></video>
+        <!-- Ảnh tải lên -->
+        <img id="uploadedScanPreview" alt="" class="hidden w-full h-full object-cover opacity-75" />
+
+        <!-- Tia quét mảnh -->
+        <div class="scanner-laser"></div>
+
+        <!-- CỤM ĐÈN XANH / ĐỎ CHỈ Ở MỘT GÓC (GÓC TRÊN BÊN PHẢI) -->
+        <div class="absolute top-5 right-5 z-20 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-black/85 border border-white/15 backdrop-blur-md">
+          <div class="flex items-center gap-2">
+            <div id="lampRedDot" class="w-4 h-4 rounded-full bg-rose-950/50 border border-rose-800/40 transition-all duration-300" title="Đèn Đỏ"></div>
+            <div id="lampGreenDot" class="w-4 h-4 rounded-full bg-emerald-950/50 border border-emerald-800/40 transition-all duration-300" title="Đèn Xanh"></div>
+          </div>
+          <span id="cornerSignalText" class="font-mono-tech text-[11px] tracking-wider uppercase text-neutral-400">
+            CHỜ QUÉT
+          </span>
+        </div>
+
+        <!-- Trạng thái Camera ở góc trên bên trái -->
+        <div id="cameraModeLabel" class="absolute top-5 left-5 z-20 font-mono-tech text-[11px] tracking-widest uppercase text-neutral-500">
+          TERMINAL 01
+        </div>
+
+        <!-- KHUNG VUÔNG NHẬN DIỆN KHUÔN MẶT Ở GIỮA -->
+        <div id="faceBoundingBox" class="relative w-64 h-64 sm:w-72 sm:h-72 border border-white/25 rounded-2xl flex flex-col justify-between p-4 bg-black/25 backdrop-blur-[2px] transition-all duration-300">
+          <div class="flex justify-between items-center font-mono-tech text-[10px] text-neutral-400">
+            <span id="hudFaceBadge">FACE ID</span>
+            <span id="hudFaceStatusText">IDLE</span>
+          </div>
+
+          <div class="my-auto text-center space-y-1">
+            <div id="hudStudentName" class="text-base font-medium text-white tracking-wide">
+              Chưa chọn học sinh
             </div>
-        </section>
-
-        <!-- =========================================================
-             TAB 2: QUẦY QUÉT KHUÔN MẶT + MÃ SÁCH (CẦN KHÓA DEV ĐỂ BẬT)
-             ========================================================= -->
-        <section id="scanner-tab" class="tab-content">
-            <div id="scanner-lock-notice" class="card warning-card">
-                <h3>Chế độ Quầy Quét yêu cầu xác thực Khóa Dev/Thủ thư</h3>
-                <p>Để ngăn học sinh tự ý mở máy quét giả mạo từ điện thoại cá nhân, vui lòng mở khóa ở mục Quản trị trước.</p>
-                <button onclick="switchTab('admin-tab')">Đến trang nhập Khóa Dev</button>
+            <div id="hudStudentClass" class="font-mono-tech text-xs text-neutral-400">
+              ---
             </div>
+          </div>
 
-            <div id="scanner-workspace" class="hidden">
-                <!-- Bảng hiển thị kết quả DUY NHẤT 2 TRẠNG THÁI: HỢP LỆ / KHÔNG HỢP LỆ -->
-                <div id="verdict-banner" class="verdict-banner neutral">
-                    <div id="verdict-title" class="verdict-title">ĐANG CHỜ NGƯỜI TIẾP THEO...</div>
-                    <div id="verdict-reason" class="verdict-reason">Đứng trước camera và đưa mã QR/mã vạch sách vào khung quét.</div>
+          <div class="flex justify-between items-center font-mono-tech text-[10px] text-neutral-500 border-t border-white/10 pt-2">
+            <span id="hudBookCode">MÃ SÁCH: ---</span>
+            <span id="hudBookTitle" class="truncate max-w-[130px]">---</span>
+          </div>
+        </div>
+
+        <!-- Thanh điều khiển quét nằm gọn dưới đáy khung lớn (với lớp đen fade-out) -->
+        <div class="absolute inset-x-0 bottom-0 p-5 bottom-fade-mask">
+          <div class="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            <select id="selectFaceStudent" class="sm:col-span-4 bg-black/90 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
+              <!-- Populated by JS -->
+            </select>
+            <select id="selectBookBarcode" class="sm:col-span-4 bg-black/90 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
+              <!-- Populated by JS -->
+            </select>
+            <input id="inputManualBarcode" type="text" placeholder="Nhập mã QR sách..." class="sm:col-span-2 bg-black/90 border border-white/20 rounded-xl px-3.5 py-2.5 text-xs font-mono-tech text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+            <button id="btnExecuteScan" type="button" class="sm:col-span-2 py-2.5 px-4 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
+              XÁC THỰC
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         TAB 2: KHO SÁCH (TỐI GIẢN, TRỐNG SẴN ĐỂ TỰ THÊM)
+    ==================================================================== -->
+    <section id="tab-inventory" class="tab-panel hidden space-y-5">
+      <div class="fade-black-surface rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex-1 flex flex-col sm:flex-row gap-3">
+          <input id="inputSearchBook" type="text" placeholder="Tìm tên sách hoặc mã QR..." class="flex-1 bg-black border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+          <select id="selectCategoryFilter" class="bg-black border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white font-mono-tech focus:outline-none focus:border-white">
+            <option value="ALL">TẤT CẢ</option>
+            <option value="Toán - Tin">Toán - Tin</option>
+            <option value="Văn Học">Văn Học</option>
+            <option value="Khoa Học">Khoa Học</option>
+            <option value="Ngoại Ngữ">Ngoại Ngữ</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 self-end sm:self-auto">
+          <div class="flex items-center bg-black border border-white/15 rounded-full p-0.5 font-mono-tech text-[11px]">
+            <button id="btnViewGrid" type="button" class="px-3 py-1 rounded-full bg-white text-black font-bold transition">
+              GRID
+            </button>
+            <button id="btnViewList" type="button" class="px-3 py-1 rounded-full text-neutral-400 hover:text-white transition">
+              LIST
+            </button>
+          </div>
+
+          <button id="btnOpenAddBookModal" type="button" class="px-4 py-1.5 rounded-full bg-white text-black font-mono-tech font-bold text-xs uppercase hover:bg-neutral-200 transition">
+            THÊM SÁCH
+          </button>
+        </div>
+      </div>
+
+      <div id="booksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         TAB 3: GIA HẠN SÁCH (ĐÍNH KÈM 2 ẢNH)
+    ==================================================================== -->
+    <section id="tab-renew" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5">
+          <div class="fade-black-surface rounded-2xl p-5 space-y-4">
+            <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">Gửi yêu cầu gia hạn (+5 ngày)</h2>
+
+            <form id="formRenewalRequest" class="space-y-3.5">
+              <div>
+                <label for="renewSelectBorrow" class="block font-mono-tech text-[11px] text-neutral-400 mb-1">Phiếu mượn</label>
+                <select id="renewSelectBorrow" class="w-full bg-black border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-white">
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="border border-white/15 rounded-xl p-3 text-center bg-black/50">
+                  <div class="font-mono-tech text-[10px] text-neutral-400 mb-2">ẢNH MẶT TRƯỚC</div>
+                  <div id="previewFrontBox" class="h-24 rounded-lg bg-neutral-950 flex items-center justify-center overflow-hidden mb-2 text-[11px] text-neutral-600">
+                    Trống
+                  </div>
+                  <label for="inputFrontPhoto" class="cursor-pointer inline-block px-3 py-1 rounded border border-white/20 hover:border-white text-[11px] font-mono-tech text-neutral-300 transition">
+                    CHỌN ẢNH
+                  </label>
+                  <input id="inputFrontPhoto" type="file" accept="image/*" class="hidden" />
                 </div>
 
-                <div class="scanner-grid">
-                    <!-- Khung Camera Khuôn mặt + Lớp phủ chống mạo danh -->
-                    <div class="card camera-card">
-                        <div class="card-header-inline">
-                            <h3>Camera Khuôn Mặt</h3>
-                            <span id="fps-counter" class="fps-badge">FPS: --</span>
-                        </div>
-                        <div class="video-wrapper">
-                            <video id="face-video" autoplay muted playsinline></video>
-                            <canvas id="face-overlay"></canvas>
-                            <!-- Hình mờ thử thách chống mạo danh -->
-                            <div id="challenge-watermark" class="watermark hidden">
-                                <div class="watermark-icon">!</div>
-                                <div id="watermark-text">HÁ MIỆNG RỘNG</div>
-                                <div class="watermark-sub">Xác thực người thật chống ảnh giả</div>
-                            </div>
-                            <!-- Cảnh báo đứng quá xa -->
-                            <div id="distance-warning" class="distance-alert hidden">
-                                ĐẾN GẦN HƠN (Độ chính xác &le; 10%)
-                            </div>
-                        </div>
-                        <div class="scanner-controls">
-                            <button id="btn-start-scan" class="btn-primary" onclick="startScannerMode()">Bắt Đầu Camera Quét</button>
-                            <button id="btn-stop-scan" class="btn-danger hidden" onclick="stopScannerMode()">Tắt Camera</button>
-                        </div>
-                    </div>
-
-                    <!-- Khung Quét Mã Sách QR / Barcode -->
-                    <div class="card">
-                        <h3>Đọc Mã QR / Mã Vạch Sách</h3>
-                        <div id="qr-reader" class="qr-box"></div>
-                        <div class="manual-code-box">
-                            <label>Hoặc nhập/quét bằng súng mã vạch:</label>
-                            <div class="search-box">
-                                <input type="text" id="manual-book-code" placeholder="VD: PY-001 hoặc CPP-001">
-                                <button onclick="triggerBookCodeScan()">Xác Nhận Mã Sách</button>
-                            </div>
-                        </div>
-                        <div id="scanned-book-preview" class="book-preview hidden"></div>
-                    </div>
+                <div class="border border-white/15 rounded-xl p-3 text-center bg-black/50">
+                  <div class="font-mono-tech text-[10px] text-neutral-400 mb-2">ẢNH TÌNH TRẠNG</div>
+                  <div id="previewConditionBox" class="h-24 rounded-lg bg-neutral-950 flex items-center justify-center overflow-hidden mb-2 text-[11px] text-neutral-600">
+                    Trống
+                  </div>
+                  <label for="inputConditionPhoto" class="cursor-pointer inline-block px-3 py-1 rounded border border-white/20 hover:border-white text-[11px] font-mono-tech text-neutral-300 transition">
+                    CHỌN ẢNH
+                  </label>
+                  <input id="inputConditionPhoto" type="file" accept="image/*" class="hidden" />
                 </div>
+              </div>
+
+              <input id="inputRenewNote" type="text" placeholder="Ghi chú tình trạng sách..." class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
+                GỬI ĐƠN
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div class="fade-black-surface rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-mono-tech uppercase tracking-wider text-white">Danh sách đơn gia hạn</h3>
+            <div id="renewalListContainer" class="space-y-3">
+              <!-- Populated by JS -->
             </div>
-        </section>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        <!-- =========================================================
-             TAB 3: QUẢN TRỊ DÀNH CHO DEV / THỦ THƯ
-             ========================================================= -->
-        <section id="admin-tab" class="tab-content">
-            <!-- Khung đăng nhập khóa riêng -->
-            <div id="dev-login-card" class="card">
-                <h2>Đăng Nhập Quyền Dev / Thủ Thư</h2>
-                <p class="hint">Mọi thao tác bên dưới đều được kiểm tra khóa trực tiếp trên máy chủ Python.</p>
-                <div class="search-box">
-                    <input type="password" id="dev-key-input" placeholder="Nhập khóa bí mật (Mặc định: Duong11A2@Secret)">
-                    <button onclick="authenticateDev()">Mở Khóa Quyền Dev</button>
-                </div>
-                <p id="auth-status-msg" class="error-text"></p>
+    <!-- ===================================================================
+         TAB 4: QUÁ HẠN (HSQUAHAN_TV — CHỈ HIỆN TRONG QUẢN LÝ)
+    ==================================================================== -->
+    <section id="tab-overdue" class="tab-panel hidden space-y-5">
+      <div class="fade-black-surface rounded-2xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">HSQUAHAN_TV (Quá hạn 5 ngày)</h2>
+          <div class="flex items-center gap-2">
+            <button id="btnExportOverdueJson" type="button" class="px-3.5 py-1.5 rounded-xl bg-white text-black font-mono-tech font-bold text-xs hover:bg-neutral-200 transition">
+              XUẤT JSON
+            </button>
+            <button id="btnExportOverdueCsv" type="button" class="px-3.5 py-1.5 rounded-xl border border-white/20 text-white font-mono-tech text-xs hover:border-white transition">
+              XUẤT CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-white/10 font-mono-tech text-[11px] text-neutral-500 uppercase">
+                <th class="py-2.5 px-3">Mã</th>
+                <th class="py-2.5 px-3">Học sinh</th>
+                <th class="py-2.5 px-3">Sách</th>
+                <th class="py-2.5 px-3">Hạn trả</th>
+                <th class="py-2.5 px-3">Trễ</th>
+                <th class="py-2.5 px-3 text-right">Xử lý</th>
+              </tr>
+            </thead>
+            <tbody id="overdueTableBody" class="divide-y divide-white/10 text-xs">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         TAB 5: QUẢN TRỊ HỌC SINH & LOG HỆ THỐNG (CHỈ HIỆN TRONG QUẢN LÝ)
+    ==================================================================== -->
+    <section id="tab-logs" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Thêm Học Sinh Vào Database Nhận Diện -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="fade-black-surface rounded-2xl p-5 space-y-4">
+            <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">Thêm dữ liệu học sinh (&lt;face&gt;data)</h2>
+            <form id="formAddStudentFace" class="space-y-3">
+              <input id="inputNewStudentName" type="text" placeholder="Họ và tên học sinh" required class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+              <input id="inputNewStudentClass" type="text" placeholder="Lớp (VD: 11A1)" required class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase hover:bg-neutral-200 transition">
+                LƯU HỌC SINH
+              </button>
+            </form>
+            <div id="studentDbPills" class="flex flex-wrap gap-1.5 pt-2">
+              <!-- Populated by JS -->
             </div>
+          </div>
 
-            <!-- Bảng điều khiển sau khi mở khóa -->
-            <div id="dev-dashboard" class="hidden">
-                <div class="grid-2">
-                    <!-- 1. Đăng ký khuôn mặt học sinh (Nhiều ảnh 1 người) -->
-                    <div class="card">
-                        <h2>1. Đăng Ký Khuôn Mặt Học Sinh</h2>
-                        <p class="hint">Chụp nhiều góc mặt (thẳng, nghiêng nhẹ, đeo kính) cho mỗi học sinh để tăng độ chính xác.</p>
-                        <label>Họ tên & Lớp:</label>
-                        <input type="text" id="reg-student-name" value="Vi Hoàng Dương 11A2" placeholder="VD: Vi Hoàng Dương 11A2">
-
-                        <div class="enroll-cam-box">
-                            <video id="enroll-video" autoplay muted playsinline></video>
-                        </div>
-                        <div class="btn-group">
-                            <button onclick="startEnrollCamera()">1. Bật Camera Mẫu</button>
-                            <button onclick="captureFaceSample()">2. Chụp Mẫu Mặt (<span id="sample-count">0</span>)</button>
-                        </div>
-
-                        <label>Ảnh đại diện hồ sơ (Tùy chọn, tối đa 2MB):</label>
-                        <input type="file" id="reg-student-photo" accept="image/jpeg,image/png,image/webp">
-
-                        <button class="btn-primary full-width" onclick="submitStudentRegistration()">3. Lưu Dữ Liệu Lên Máy Chủ</button>
-                        <p id="reg-student-msg" class="status-msg"></p>
-                    </div>
-
-                    <!-- 2. Thêm sách, tạo mã riêng & tạo QR -->
-                    <div class="card">
-                        <h2>2. Thêm Sách & Tạo Mã Riêng Từng Cuốn</h2>
-                        <label>Tên đầu sách:</label>
-                        <input type="text" id="add-book-title" placeholder="VD: Tin Học 11 - Cánh Diều">
-
-                        <label>Danh sách mã riêng từng cuốn (cách nhau dấu phẩy):</label>
-                        <div class="search-box">
-                            <input type="text" id="add-book-codes" placeholder="VD: TH11-001, TH11-002">
-                            <button onclick="autoGenerateCodes()">Tự Sinh Mã</button>
-                        </div>
-
-                        <label>Ảnh bìa sách đi kèm (Tùy chọn, JPG/PNG/WEBP &le; 2MB):</label>
-                        <input type="file" id="add-book-cover" accept="image/jpeg,image/png,image/webp">
-
-                        <button class="btn-primary full-width" onclick="submitNewBook()">Lưu Sách & Tạo Nhãn Mã</button>
-                        <p id="add-book-msg" class="status-msg"></p>
-                        <div id="Printable-qr-labels" class="qr-labels-grid"></div>
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <!-- 3. Thủ thư xác nhận trả hộ -->
-                    <div class="card">
-                        <h2>3. Thủ Thư Xác Nhận Trả Sách Hộ</h2>
-                        <p class="hint">Dùng khi học sinh gửi bạn trả hộ hoặc không thể có mặt trước camera.</p>
-                        <input type="text" id="override-book-code" placeholder="Nhập mã cuốn sách (VD: PY-001)">
-                        <input type="text" id="override-note" placeholder="Lý do trả hộ (VD: Bạn cùng lớp trả giúp)">
-                        <button class="btn-primary" onclick="submitLibrarianReturn()">Xác Nhận Trả Hộ</button>
-                        <p id="override-msg" class="status-msg"></p>
-                    </div>
-
-                    <!-- 4. Sao lưu, Phục hồi & Xuất Log -->
-                    <div class="card">
-                        <h2>4. Sao Lưu, Phục Hồi & Xuất Nhật Ký</h2>
-                        <div class="btn-group">
-                            <button onclick="loadAuditLogs()">Xem Nhật Ký Mới Nhất</button>
-                            <button onclick="exportLogsCSV()">Tải File Log (.CSV)</button>
-                            <button onclick="downloadBackupDB()">Tải Bản Sao Lưu (.DB)</button>
-                        </div>
-                        <hr>
-                        <label>Phục hồi dữ liệu từ file <code>.db</code>:</label>
-                        <div class="search-box">
-                            <input type="file" id="restore-db-file" accept=".db">
-                            <button class="btn-danger" onclick="restoreDatabase()">Phục Hồi</button>
-                        </div>
-                        <p id="backup-msg" class="status-msg"></p>
-                    </div>
-                </div>
-
-                <!-- Bảng hiển thị Log -->
-                <div class="card">
-                    <h2>Nhật Ký Mượn Trả (Múi Giờ Việt Nam)</h2>
-                    <div id="audit-log-table-wrapper" class="table-scroll"></div>
-                </div>
+          <div class="fade-black-surface rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-mono-tech text-xs text-neutral-400 uppercase">Dữ liệu hệ thống</span>
+              <button id="btnClearAllData" type="button" class="px-3 py-1 rounded border border-rose-500/40 text-rose-300 font-mono-tech text-[11px] hover:bg-rose-500/10 transition">
+                XOÁ TOÀN BỘ DỮ LIỆU
+              </button>
             </div>
-        </section>
-    </main>
+          </div>
+        </div>
 
-    <script src="/static/app.js"></script>
+        <!-- Nhật ký Mượn / Trả & Xuất Log -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="fade-black-surface rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+              <h2 class="text-sm font-mono-tech uppercase tracking-wider text-white">Lịch sử lưu trữ</h2>
+              <div class="flex items-center gap-2">
+                <button id="btnCopyRawLogs" type="button" class="px-3 py-1.5 rounded-xl border border-white/20 text-xs font-mono-tech text-neutral-300 hover:border-white transition">
+                  SAO CHÉP
+                </button>
+                <button id="btnExportAllLogs" type="button" class="px-3.5 py-1.5 rounded-xl bg-white text-black font-mono-tech font-bold text-xs hover:bg-neutral-200 transition">
+                  TẢI LOGS.JSON
+                </button>
+              </div>
+            </div>
+            <pre id="rawLogsStreamBox" class="bg-black border border-white/10 rounded-xl p-4 font-mono-tech text-[11px] text-neutral-300 max-h-80 overflow-y-auto leading-relaxed"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       MODAL NHẬP KEY QUẢN LÝ (eadlibraryjdh-28678-2027rews)
+  ====================================================================== -->
+  <div id="modalAdminKey" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="fade-black-surface bg-neutral-950 rounded-2xl max-w-md w-full p-6 space-y-4 border border-white/20">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h3 class="text-sm font-mono-tech uppercase tracking-wider text-white">Xác thực quyền Quản Lý</h3>
+        <button id="btnCloseAdminKeyModal" type="button" class="px-2 py-0.5 text-xs font-mono-tech text-neutral-400 hover:text-white">ĐÓNG</button>
+      </div>
+      <form id="formAdminKey" class="space-y-3">
+        <input id="inputAdminKey" type="password" placeholder="Nhập key quản lý..." required class="w-full bg-black border border-white/20 rounded-xl px-3.5 py-2.5 text-xs font-mono-tech text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
+        <div id="adminKeyError" class="hidden text-xs font-mono-tech text-rose-400">
+          Key không chính xác.
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button id="btnCancelAdminKey" type="button" class="px-4 py-2 rounded-xl border border-white/15 text-xs font-mono-tech text-neutral-400">HUỶ</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-white text-black font-mono-tech font-bold text-xs">MỞ KHOÁ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL THÊM SÁCH MỚI (CHỈ QUẢN LÝ)
+  ====================================================================== -->
+  <div id="modalAddBook" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="fade-black-surface bg-neutral-950 rounded-2xl max-w-lg w-full p-6 space-y-4 border border-white/20">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h3 class="text-sm font-mono-tech uppercase tracking-wider text-white">Thêm sách vào kho</h3>
+        <button id="btnCloseAddBookModal" type="button" class="px-2 py-0.5 text-xs font-mono-tech text-neutral-400 hover:text-white">ĐÓNG</button>
+      </div>
+
+      <form id="formAddBook" class="space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input id="inputBookTitle" type="text" required placeholder="Tên sách" class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white" />
+          <input id="inputBookAuthor" type="text" required placeholder="Tác giả" class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select id="inputBookCategory" class="w-full bg-black border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white">
+            <option value="Toán - Tin">Toán - Tin</option>
+            <option value="Văn Học">Văn Học</option>
+            <option value="Khoa Học">Khoa Học</option>
+            <option value="Ngoại Ngữ">Ngoại Ngữ</option>
+          </select>
+          <input id="inputBookStock" type="number" min="1" max="999" value="1" required placeholder="Số lượng" class="w-full bg-black border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white" />
+          <input id="inputBookCode" type="text" required placeholder="Mã QR (VD: QR-01)" class="w-full bg-black border border-white/15 rounded-xl px-3 py-2.5 text-xs font-mono-tech text-white" />
+        </div>
+
+        <textarea id="inputBookDesc" rows="2" placeholder="Mô tả ngắn..." class="w-full bg-black border border-white/15 rounded-xl p-3 text-xs text-white"></textarea>
+
+        <input id="inputBookCoverFile" type="file" accept="image/*" class="w-full text-xs text-neutral-400" />
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btnCancelAddBook" type="button" class="px-4 py-2 rounded-xl border border-white/15 text-xs font-mono-tech text-neutral-400">HUỶ</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-white text-black font-mono-tech font-bold text-xs">LƯU SÁCH</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL CHI TIẾT SÁCH, MÃ QR & BÌNH LUẬN
+  ====================================================================== -->
+  <div id="modalBookDetail" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="fade-black-surface bg-neutral-950 rounded-2xl max-w-xl w-full p-6 space-y-4 border border-white/20 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between border-b border-white/10 pb-3">
+        <div>
+          <span id="detailBookCode" class="font-mono-tech text-xs text-neutral-400"></span>
+          <h3 id="detailBookTitle" class="text-lg font-medium text-white mt-0.5"></h3>
+          <p id="detailBookAuthor" class="text-xs text-neutral-500"></p>
+        </div>
+        <button id="btnCloseBookDetail" type="button" class="px-2 py-0.5 text-xs font-mono-tech text-neutral-400 hover:text-white">ĐÓNG</button>
+      </div>
+
+      <p id="detailBookDesc" class="text-xs text-neutral-300 leading-relaxed"></p>
+
+      <div class="bg-black border border-white/10 rounded-xl p-3.5 flex items-center justify-between gap-4">
+        <div id="detailQrString" class="font-mono-tech text-sm font-bold text-white"></div>
+        <div id="detailQrSvgBox" class="bg-white p-2 rounded w-16 h-16 flex items-center justify-center"></div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="font-mono-tech text-[11px] text-neutral-400 uppercase">Đánh giá</div>
+        <div id="detailReviewsList" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+      </div>
+
+      <form id="formAddReview" class="space-y-2.5 border-t border-white/10 pt-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <input id="inputReviewerName" type="text" required placeholder="Họ tên học sinh" class="bg-black border border-white/15 rounded-xl px-3 py-2 text-xs text-white" />
+          <select id="selectReviewStars" class="bg-black border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono-tech">
+            <option value="5">5 / 5</option>
+            <option value="4">4 / 5</option>
+            <option value="3">3 / 5</option>
+            <option value="2">2 / 5</option>
+            <option value="1">1 / 5</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <input id="inputReviewComment" type="text" required placeholder="Bình luận..." class="flex-1 bg-black border border-white/15 rounded-xl px-3 py-2 text-xs text-white" />
+          <button type="submit" class="px-4 py-2 rounded-xl bg-white text-black font-mono-tech font-bold text-xs">GỬI</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+  <!-- =====================================================================
+       SCRIPT HỆ THỐNG (ĐÃ XOÁ SẠCH DỮ LIỆU ẢO & ICON, BẢO MẬT BẰNG KEY)
+  ====================================================================== -->
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
