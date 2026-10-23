@@ -1,4 +1,4 @@
-# thu-vien-11a2
+# thu-vien-
 
 SCHOOL : LIB - hệ thống thư viện trường học (web tĩnh, chạy trên GitHub Pages).
 
