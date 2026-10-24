@@ -55,7 +55,7 @@ function updateCameraHudPreview() {
   const selectedCode = manualCode || document.getElementById('selectBookBarcode').value;
 
   const student = state.students.find(s => s.id === studentId);
-  const book = state.books.find(b => b.code.toLowerCase() === selectedCode.toLowerCase());
+  const book = findBookByText(selectedCode);
 
   document.getElementById('hudStudentName').textContent = student ? student.name : 'Chưa nhận diện';
   document.getElementById('hudStudentClass').textContent = student ? `Lớp ${student.className}` : '---';
@@ -135,12 +135,9 @@ async function startScanCamera() {
   clearFaceCanvas(document.getElementById('scanOverlay'));
   setScanSource('camera');
 
-  try {
-    await loadFaceModels();
-  } catch (err) {
+  loadFaceModels().catch(() => {
     showToast('Không tải được mô hình nhận diện, hãy chọn học sinh thủ công', 'error');
-    return;
-  }
+  });
   scanFrame();
 }
 
@@ -161,11 +158,17 @@ function stopScanCamera() {
 async function scanFrame() {
   if (!scanStream) return;
   const video = document.getElementById('cameraVideo');
-  if (!scanFrameBusy && faceModelsReady && video.readyState >= 2 && video.videoWidth) {
+  if (!scanFrameBusy && video.readyState >= 2 && video.videoWidth) {
     scanFrameBusy = true;
     try {
-      const dets = await detectFaces(video);
-      if (scanStream) handleDetections(dets, video.videoWidth, video.videoHeight);
+      scanQrOnVideo(video); // QR nhanh, luôn quét
+      if (faceModelsReady) {
+        const dets = await detectFaces(video);
+        if (scanStream) handleDetections(dets, video.videoWidth, video.videoHeight);
+      } else {
+        const qrItem = currentQrOverlayItem();
+        drawFaceBoxes(document.getElementById('scanOverlay'), video.videoWidth, video.videoHeight, qrItem ? [qrItem] : []);
+      }
     } catch (err) {
       // bỏ qua khung lỗi, thử lại khung sau
     } finally {
@@ -187,7 +190,8 @@ function handleDetections(dets, width, height, needStreak = 2) {
       color: student ? FACE_COLOR_OK : FACE_COLOR_BAD
     };
   });
-  drawFaceBoxes(document.getElementById('scanOverlay'), width, height, items);
+  const qrItem = currentQrOverlayItem();
+  drawFaceBoxes(document.getElementById('scanOverlay'), width, height, qrItem ? [...items, qrItem] : items);
 
   if (Date.now() < signalHoldUntil) return;
 
@@ -254,7 +258,7 @@ function executeScanTransaction() {
   const bookCode = manualCode || document.getElementById('selectBookBarcode').value;
 
   const student = state.students.find(s => s.id === studentId);
-  const book = state.books.find(b => b.code.toLowerCase() === bookCode.toLowerCase());
+  const book = findBookByText(bookCode);
   const nowVn = formatVnTime();
 
   if (!student || !book) {

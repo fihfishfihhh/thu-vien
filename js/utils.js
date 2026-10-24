@@ -60,23 +60,11 @@ function playSignalSound(isValid) {
 }
 
 function generateQrSvg(codeString) {
-  let hash = 0;
-  for (let i = 0; i < codeString.length; i++) {
-    hash = ((hash << 5) - hash) + codeString.charCodeAt(i);
-    hash |= 0;
-  }
-  let cells = '';
-  const size = 7;
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      const isCorner = (r < 2 && c < 2) || (r < 2 && c >= size - 2) || (r >= size - 2 && c < 2);
-      const bit = (Math.abs(hash + r * 13 + c * 7) % 2 === 0) || isCorner;
-      if (bit) {
-        cells += `<rect x="${c * 8 + 4}" y="${r * 8 + 4}" width="7" height="7" fill="#000000" rx="1"/>`;
-      }
-    }
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-full h-full">${cells}</svg>`;
+  const qr = qrcode(0, 'M');
+  qr.addData(String(codeString), 'Byte');
+  qr.make();
+  const svg = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  return svg.replace('<svg', '<svg class="w-full h-full"');
 }
 
 function showToast(message, type = 'info') {

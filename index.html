@@ -148,12 +148,23 @@
           </div>
 
           <div class="space-y-2.5">
-            <div class="font-mono-tech text-[11px] text-neutral-500 uppercase">Sách</div>
+            <div class="flex items-center justify-between">
+              <div class="font-mono-tech text-[11px] text-neutral-500 uppercase">Sách (quét mã QR)</div>
+              <label for="inputQrPhoto" class="cursor-pointer px-3 py-1 rounded-full border border-white/15 hover:border-white/50 text-[11px] font-mono-tech text-neutral-300 transition">
+                TẢI ẢNH QR
+              </label>
+              <input id="inputQrPhoto" type="file" accept="image/*" class="hidden" />
+            </div>
+            <p class="text-xs text-neutral-500">Đưa mã QR của sách trước camera, hoặc nhập mã / tên sách rồi bấm Enter.</p>
+            <input id="inputManualBarcode" type="text" placeholder="Nhập mã QR hoặc tên sách..." autocomplete="off" class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs font-mono-tech text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
             <select id="selectBookBarcode" class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-white">
               <!-- Populated by JS -->
             </select>
-            <input id="inputManualBarcode" type="text" placeholder="Hoặc nhập mã QR sách..." class="w-full bg-black border border-white/15 rounded-xl px-3.5 py-2.5 text-xs font-mono-tech text-white placeholder-neutral-600 focus:outline-none focus:border-white" />
             <div id="hudBookTitle" class="font-mono-tech text-xs text-neutral-400 truncate">---</div>
+            <label class="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer select-none">
+              <input id="toggleAutoConfirm" type="checkbox" checked class="accent-white" />
+              Tự xác thực khi đã nhận diện mặt và quét QR
+            </label>
           </div>
 
           <button id="btnExecuteScan" type="button" class="w-full py-3 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
@@ -456,7 +467,7 @@
 
       <div class="bg-black border border-white/10 rounded-xl p-3.5 flex items-center justify-between gap-4">
         <div id="detailQrString" class="font-mono-tech text-sm font-bold text-white"></div>
-        <div id="detailQrSvgBox" class="bg-white p-2 rounded w-16 h-16 flex items-center justify-center"></div>
+        <div id="detailQrSvgBox" class="bg-white p-1 rounded w-28 h-28 flex items-center justify-center"></div>
       </div>
 
       <div class="space-y-2">
@@ -490,9 +501,12 @@
        SCRIPT HỆ THỐNG (ĐÃ XOÁ SẠCH DỮ LIỆU ẢO & ICON, BẢO MẬT BẰNG KEY)
   ====================================================================== -->
   <script src="lib/face-api.js"></script>
+  <script src="lib/jsQR.js"></script>
+  <script src="lib/qrcode.js"></script>
   <script src="js/state.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/face.js"></script>
+  <script src="js/qr.js"></script>
   <script src="js/scanner.js"></script>
   <script src="js/inventory.js"></script>
   <script src="js/admin.js"></script>

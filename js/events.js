@@ -381,6 +381,7 @@ function setupEventListeners() {
 
   // Quản trị Học Sinh & Log
   setupEnrollEvents();
+  setupQrEvents();
 
   document.getElementById('btnClearAllData').addEventListener('click', () => {
     state.students = [];
