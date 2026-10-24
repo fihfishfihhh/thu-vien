@@ -8,4 +8,5 @@ window.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   renderAll();
   initSparseRainBackground();
+  initCustomBackground();
 });

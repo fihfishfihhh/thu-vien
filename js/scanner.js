@@ -71,9 +71,40 @@ function updateCameraHudPreview() {
     photoEmpty.classList.remove('hidden');
   }
 
+  setStepChip('stepFace', !!student, student ? `① MẶT: ${student.name}` : '① MẶT: CHỜ');
+  setStepChip('stepBook', !!book, book ? `② SÁCH: ${book.code}` : '② SÁCH: CHỜ');
+
   document.getElementById('hudBookTitle').textContent = book
     ? `[${book.code}] ${book.title}`
     : (selectedCode ? `Không có mã "${selectedCode}"` : '---');
+}
+
+function setStepChip(id, done, text) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'px-2.5 py-1 rounded-full border truncate max-w-[48%] ' +
+    (done ? 'border-emerald-500/50 text-emerald-300' : 'border-white/15 text-neutral-500');
+}
+
+// Có đủ học sinh + sách thì tự ghi nhận; thiếu 1 trong 2 thì chờ tối đa 15 giây
+let partialTimer = null;
+function tryAutoConfirm() {
+  if (Date.now() < signalHoldUntil) return;
+  clearTimeout(partialTimer);
+
+  const hasStudent = !!document.getElementById('selectFaceStudent').value;
+  const hasBook = !!(document.getElementById('inputManualBarcode').value.trim() ||
+                     document.getElementById('selectBookBarcode').value);
+
+  if (hasStudent && hasBook) {
+    executeScanTransaction();
+    return;
+  }
+  if (hasStudent || hasBook) {
+    partialTimer = setTimeout(() => {
+      if (Date.now() >= signalHoldUntil) clearScannerBuffer(true);
+    }, 15000);
+  }
 }
 
 // Điều khiển Đèn Đỏ / Xanh nằm gọn ở góc trên bên phải khung quét
@@ -218,6 +249,7 @@ function handleDetections(dets, width, height, needStreak = 2) {
         updateCameraHudPreview();
       }
       setCornerSignal('GREEN', 'ĐÃ NHẬN DIỆN');
+      tryAutoConfirm();
     }
   } else {
     faceStreak = { id: null, count: 0 };
@@ -252,6 +284,7 @@ function scanPhotoFile(file) {
 
 function executeScanTransaction() {
   if (resetBufferTimer) clearTimeout(resetBufferTimer);
+  clearTimeout(partialTimer);
 
   const studentId = document.getElementById('selectFaceStudent').value;
   const manualCode = document.getElementById('inputManualBarcode').value.trim();
@@ -272,6 +305,14 @@ function executeScanTransaction() {
     if (book.stock <= 0) {
       playSignalSound(false);
       showResultSignal('RED', 'HẾT SÁCH');
+      resetBufferTimer = setTimeout(() => clearScannerBuffer(true), 3000);
+      return;
+    }
+
+    if (state.borrows.some(b => !b.returned && b.studentId === student.id && b.bookCode === book.code)) {
+      playSignalSound(false);
+      showResultSignal('RED', 'ĐANG MƯỢN SÁCH NÀY');
+      showToast(`${student.name} đang mượn "${book.title}" rồi`, 'error');
       resetBufferTimer = setTimeout(() => clearScannerBuffer(true), 3000);
       return;
     }
@@ -304,7 +345,8 @@ function executeScanTransaction() {
 
     saveState();
     playSignalSound(true);
-    showResultSignal('GREEN', 'HỢP LỆ');
+    showResultSignal('GREEN', 'ĐÃ MƯỢN (-1)');
+    showToast(`${student.name} mượn "${book.title}" (còn ${book.stock})`, 'success');
   } else {
     if (state.role !== 'admin') {
       playSignalSound(false);
@@ -313,9 +355,8 @@ function executeScanTransaction() {
     }
 
     book.stock += 1;
-    const activeBorrow = state.borrows.find(
-      b => !b.returned && b.bookCode === book.code && (b.studentId === student.id || true)
-    );
+    const openBorrows = state.borrows.filter(b => !b.returned && b.bookCode === book.code);
+    const activeBorrow = openBorrows.find(b => b.studentId === student.id) || openBorrows[0];
     if (activeBorrow) activeBorrow.returned = true;
 
     state.logs.unshift({
@@ -330,6 +371,7 @@ function executeScanTransaction() {
     saveState();
     playSignalSound(true);
     showResultSignal('GREEN', 'ĐÃ TRẢ (+1)');
+    showToast(`${student.name} trả "${book.title}" (còn ${book.stock})`, 'success');
   }
 
   document.getElementById('inputManualBarcode').value = '';
@@ -342,6 +384,7 @@ function executeScanTransaction() {
 }
 
 function clearScannerBuffer(silent = false) {
+  clearTimeout(partialTimer);
   document.getElementById('inputManualBarcode').value = '';
   document.getElementById('selectFaceStudent').value = '';
   document.getElementById('selectBookBarcode').value = '';

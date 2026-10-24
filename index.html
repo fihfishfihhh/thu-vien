@@ -15,6 +15,10 @@
   <!-- =====================================================================
        BACKGROUND CANVAS: HẠT RƠI NHƯ MƯA (ÍT VÀ MỜ)
   ====================================================================== -->
+  <div id="customBg" class="hidden fixed inset-0 z-0 pointer-events-none overflow-hidden">
+    <div id="customBgMedia" class="absolute inset-0"></div>
+    <div id="customBgDim" class="absolute inset-0 bg-black"></div>
+  </div>
   <canvas id="bgRainCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
   <!-- =====================================================================
@@ -48,6 +52,34 @@
 
       <!-- Phải: Âm thanh & Chế độ Quản Lý (Yêu cầu Key) -->
       <div class="flex items-center gap-2 font-mono-tech text-[11px]">
+        <div class="relative">
+          <button id="btnBgMenu" type="button" class="px-3 py-1 rounded-full border border-white/15 text-neutral-400 hover:text-white hover:border-white/40 transition">
+            NỀN
+          </button>
+          <div id="bgPanel" class="hidden absolute right-0 top-full mt-2 w-72 z-50 bg-neutral-950 border border-white/15 rounded-2xl p-4 space-y-4 shadow-2xl">
+            <div class="text-xs text-white uppercase tracking-wider">Nền trang</div>
+            <div class="flex items-center gap-2">
+              <label for="inputBgFile" class="cursor-pointer px-3 py-1.5 rounded-full bg-white text-black font-bold text-[11px] hover:bg-neutral-200 transition">
+                TẢI ẢNH / VIDEO
+              </label>
+              <input id="inputBgFile" type="file" accept="image/*,video/*" class="hidden" />
+              <span id="bgFileName" class="text-[11px] text-neutral-500 truncate"></span>
+            </div>
+            <div id="bgPresets" class="flex flex-wrap gap-2"></div>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-neutral-400">
+                <span>Độ tối nền</span><span id="bgDimValue">55%</span>
+              </div>
+              <input id="bgDimRange" type="range" min="0" max="90" value="55" class="w-full accent-white" />
+            </div>
+            <label class="flex items-center gap-2 text-[11px] text-neutral-400 cursor-pointer select-none">
+              <input id="bgRainToggle" type="checkbox" checked class="accent-white" /> Hiệu ứng mưa
+            </label>
+            <button id="btnBgReset" type="button" class="w-full py-1.5 rounded-xl border border-white/15 text-[11px] text-neutral-400 hover:text-white transition">
+              ĐẶT LẠI NỀN MẶC ĐỊNH
+            </button>
+          </div>
+        </div>
         <button id="btnToggleSound" type="button" class="px-3 py-1 rounded-full border border-white/15 text-neutral-400 hover:text-white hover:border-white/40 transition">
           ÂM: BẬT
         </button>
@@ -132,6 +164,12 @@
 
         <!-- BẢNG THÔNG TIN BÊN PHẢI -->
         <aside class="fade-black-surface rounded-2xl p-5 space-y-5 self-start">
+          <div class="flex items-center justify-between gap-2 font-mono-tech text-[11px]">
+            <span id="stepFace" class="px-2.5 py-1 rounded-full border border-white/15 text-neutral-500">① MẶT: CHỜ</span>
+            <span id="stepBook" class="px-2.5 py-1 rounded-full border border-white/15 text-neutral-500">② SÁCH: CHỜ</span>
+          </div>
+          <p class="text-xs text-neutral-500 -mt-2">Thấy mặt và mã sách là tự ghi nhận, không cần bấm gì.</p>
+
           <div class="space-y-2.5">
             <div class="font-mono-tech text-[11px] text-neutral-500 uppercase">Học sinh</div>
             <div class="flex items-center gap-3 bg-black border border-white/10 rounded-xl p-3">
@@ -161,14 +199,10 @@
               <!-- Populated by JS -->
             </select>
             <div id="hudBookTitle" class="font-mono-tech text-xs text-neutral-400 truncate">---</div>
-            <label class="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer select-none">
-              <input id="toggleAutoConfirm" type="checkbox" checked class="accent-white" />
-              Tự xác thực khi đã nhận diện mặt và quét QR
-            </label>
           </div>
 
-          <button id="btnExecuteScan" type="button" class="w-full py-3 rounded-xl bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition">
-            XÁC THỰC
+          <button id="btnExecuteScan" type="button" class="w-full py-2 rounded-xl border border-white/15 text-neutral-400 hover:text-white hover:border-white/40 font-mono-tech text-[11px] uppercase tracking-wider transition">
+            GHI NHẬN THỦ CÔNG
           </button>
         </aside>
       </div>
@@ -439,7 +473,26 @@
 
         <textarea id="inputBookDesc" rows="2" placeholder="Mô tả ngắn..." class="w-full bg-black border border-white/15 rounded-xl p-3 text-xs text-white"></textarea>
 
-        <input id="inputBookCoverFile" type="file" accept="image/*" class="w-full text-xs text-neutral-400" />
+        <div class="flex flex-wrap items-center gap-2">
+          <label for="inputBookCoverFile" class="cursor-pointer px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white text-xs font-mono-tech text-neutral-200 transition">
+            THÊM ẢNH BÌA
+          </label>
+          <input id="inputBookCoverFile" type="file" accept="image/*" class="hidden" />
+          <label for="inputBookQrFile" class="cursor-pointer px-3.5 py-1.5 rounded-full border border-white/20 hover:border-white text-xs font-mono-tech text-neutral-200 transition">
+            THÊM ẢNH MÃ QR
+          </label>
+          <input id="inputBookQrFile" type="file" accept="image/*" class="hidden" />
+        </div>
+
+        <div class="flex items-center gap-4 bg-black border border-white/10 rounded-xl p-3">
+          <div id="addBookQrPreview" class="bg-white p-1 rounded w-24 h-24 shrink-0 flex items-center justify-center"></div>
+          <div class="space-y-2 min-w-0">
+            <div id="addBookQrInfo" class="text-xs text-neutral-400 break-words"></div>
+            <button id="btnClearQrImage" type="button" class="hidden px-3 py-1 rounded-full border border-white/15 text-[11px] font-mono-tech text-neutral-400 hover:text-white transition">
+              BỎ ẢNH QR
+            </button>
+          </div>
+        </div>
 
         <div class="flex justify-end gap-2 pt-2">
           <button id="btnCancelAddBook" type="button" class="px-4 py-2 rounded-xl border border-white/15 text-xs font-mono-tech text-neutral-400">HUỶ</button>
@@ -466,7 +519,7 @@
       <p id="detailBookDesc" class="text-xs text-neutral-300 leading-relaxed"></p>
 
       <div class="bg-black border border-white/10 rounded-xl p-3.5 flex items-center justify-between gap-4">
-        <div id="detailQrString" class="font-mono-tech text-sm font-bold text-white"></div>
+        <div id="detailQrString" class="font-mono-tech text-sm font-bold text-white whitespace-pre-line break-words"></div>
         <div id="detailQrSvgBox" class="bg-white p-1 rounded w-28 h-28 flex items-center justify-center"></div>
       </div>
 
@@ -510,9 +563,11 @@
   <script src="js/scanner.js"></script>
   <script src="js/inventory.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/addbook.js"></script>
   <script src="js/enroll.js"></script>
   <script src="js/events.js"></script>
   <script src="js/background.js"></script>
+  <script src="js/custombg.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

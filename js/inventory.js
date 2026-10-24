@@ -34,11 +34,11 @@ function renderInventory() {
     if (state.viewMode === 'list') {
       return `<div class="fade-black-surface rounded-2xl p-4 flex items-center justify-between gap-4">
         <div>
-          <span class="font-mono-tech text-[11px] text-neutral-400">[${b.code}] SL: ${b.stock}</span>
-          <h3 class="text-sm font-medium text-white">${b.title}</h3>
+          <span class="font-mono-tech text-[11px] text-neutral-400">[${escapeHtml(b.code)}] SL: ${b.stock}</span>
+          <h3 class="text-sm font-medium text-white">${escapeHtml(b.title)}</h3>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" data-quick-scan="${b.code}" class="px-3 py-1 rounded-full border border-white/15 hover:border-white text-[11px] font-mono-tech text-neutral-300">
+          <button type="button" data-quick-scan="${escapeHtml(b.code)}" class="px-3 py-1 rounded-full border border-white/15 hover:border-white text-[11px] font-mono-tech text-neutral-300">
             CHỌN QUÉT
           </button>
           <button type="button" data-open-book="${b.id}" class="px-3 py-1 rounded-full bg-white text-black font-mono-tech font-bold text-[11px]">
@@ -51,19 +51,19 @@ function renderInventory() {
     return `<div class="fade-black-surface rounded-2xl p-5 flex flex-col justify-between gap-4">
       <div class="space-y-2.5">
         <div class="flex items-center justify-between font-mono-tech text-[11px]">
-          <span class="text-neutral-400">${b.code}</span>
+          <span class="text-neutral-400">${escapeHtml(b.code)}</span>
           <span class="${b.stock > 0 ? 'text-emerald-400' : 'text-rose-400'}">SL: ${b.stock}</span>
         </div>
-        ${b.coverImage ? `<img src="${b.coverImage}" alt="${b.title}" class="w-full h-32 object-cover rounded-xl border border-white/10" />` : ''}
+        ${b.coverImage ? `<img src="${b.coverImage}" alt="${escapeHtml(b.title)}" class="w-full h-32 object-cover rounded-xl border border-white/10" />` : ''}
         <div>
-          <h3 class="text-base font-medium text-white">${b.title}</h3>
-          <p class="text-xs text-neutral-500">${b.author}</p>
+          <h3 class="text-base font-medium text-white">${escapeHtml(b.title)}</h3>
+          <p class="text-xs text-neutral-500">${escapeHtml(b.author)}</p>
         </div>
       </div>
       <div class="pt-3 border-t border-white/10 flex items-center justify-between">
         <span class="font-mono-tech text-[11px] text-neutral-400">Đánh giá: ${avgStars}/5</span>
         <div class="flex items-center gap-2">
-          <button type="button" data-quick-scan="${b.code}" class="px-2.5 py-1 rounded-full border border-white/15 hover:border-white text-[11px] font-mono-tech text-neutral-300">
+          <button type="button" data-quick-scan="${escapeHtml(b.code)}" class="px-2.5 py-1 rounded-full border border-white/15 hover:border-white text-[11px] font-mono-tech text-neutral-300">
             QUÉT
           </button>
           <button type="button" data-open-book="${b.id}" class="px-3 py-1 rounded-full bg-white text-black font-mono-tech font-bold text-[11px]">
@@ -84,8 +84,11 @@ function openBookDetailModal(bookId) {
   document.getElementById('detailBookTitle').textContent = book.title;
   document.getElementById('detailBookAuthor').textContent = `${book.author} (${book.category})`;
   document.getElementById('detailBookDesc').textContent = book.desc || '';
-  document.getElementById('detailQrString').textContent = book.code;
-  document.getElementById('detailQrSvgBox').innerHTML = generateQrSvg(book.code);
+  document.getElementById('detailQrString').textContent =
+    book.qrText && book.qrText !== book.code ? `${book.code}\nQR: ${book.qrText}` : book.code;
+  document.getElementById('detailQrSvgBox').innerHTML = book.qrImage
+    ? `<img src="${book.qrImage}" alt="QR" class="w-full h-full object-contain" />`
+    : generateQrSvg(book.code);
 
   const reviewsBox = document.getElementById('detailReviewsList');
   if (book.reviews.length === 0) {

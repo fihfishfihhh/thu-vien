@@ -158,60 +158,7 @@ function setupEventListeners() {
     }
   });
 
-  // Thêm Sách (Yêu cầu Key Quản Lý nếu chưa mở khoá)
-  document.getElementById('btnOpenAddBookModal').addEventListener('click', () => {
-    requestAdminUnlock(() => {
-      const nextNum = state.books.length + 1;
-      document.getElementById('inputBookCode').value = `LIB-QR-${String(nextNum).padStart(3, '0')}`;
-      document.getElementById('modalAddBook').classList.remove('hidden');
-    });
-  });
-
-  document.getElementById('btnCloseAddBookModal').addEventListener('click', () => {
-    document.getElementById('modalAddBook').classList.add('hidden');
-  });
-  document.getElementById('btnCancelAddBook').addEventListener('click', () => {
-    document.getElementById('modalAddBook').classList.add('hidden');
-  });
-
-  let tempNewBookCover = null;
-  document.getElementById('inputBookCoverFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => { tempNewBookCover = reader.result; };
-    reader.readAsDataURL(file);
-  });
-
-  document.getElementById('formAddBook').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const title = document.getElementById('inputBookTitle').value.trim();
-    const author = document.getElementById('inputBookAuthor').value.trim();
-    const category = document.getElementById('inputBookCategory').value;
-    const stock = Math.max(1, parseInt(document.getElementById('inputBookStock').value, 10) || 1);
-    const code = document.getElementById('inputBookCode').value.trim().toUpperCase();
-    const desc = document.getElementById('inputBookDesc').value.trim();
-
-    state.books.unshift({
-      id: 'B' + Date.now(),
-      code,
-      title,
-      author,
-      category,
-      stock,
-      totalStock: stock,
-      desc,
-      coverImage: tempNewBookCover,
-      reviews: []
-    });
-
-    tempNewBookCover = null;
-    e.target.reset();
-    document.getElementById('modalAddBook').classList.add('hidden');
-    saveState();
-    renderAll();
-    showToast('Đã lưu sách vào kho', 'success');
-  });
+  setupAddBookEvents();
 
   // Chi tiết sách & Bình luận
   document.getElementById('btnCloseBookDetail').addEventListener('click', () => {

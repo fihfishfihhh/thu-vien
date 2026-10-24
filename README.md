@@ -7,11 +7,18 @@ SCHOOL : LIB - hệ thống thư viện trường học (web tĩnh, chạy trên
 - Tab **QUÉT** → **BẬT CAMERA**: máy tự khoanh khuôn mặt, xanh = nhận ra học sinh, đỏ = không nhận diện.
 - Dùng thư viện `face-api` + mô hình lưu sẵn trong `lib/` và `models/` (không cần mạng ngoài).
 
-## Quét QR sách
-- Tab **QUÉT** → **BẬT CAMERA**, đưa mã QR của sách trước camera: máy khoanh ô xanh dương và tự điền sách.
-- Hoặc bấm **TẢI ẢNH QR**, hoặc nhập mã / tên sách vào ô rồi bấm **Enter**.
-- Mã QR chứa **mã sách** (VD `LIB-QR-001`) hoặc **tên sách** đều được (tên so khớp không phân biệt hoa thường, dấu).
-- Đã nhận diện mặt + quét QR thì tự xác thực (có thể tắt bằng ô tích bên dưới). QR in từ trang chi tiết sách là QR thật.
+## Quét tự động (không cần bấm xác thực)
+- Tab **QUÉT** → **BẬT CAMERA**. Máy thấy **khuôn mặt** đã đăng ký và **mã QR sách** là tự ghi vào log và trừ số lượng sách (thứ tự nào cũng được).
+- Chỉ thấy 1 trong 2 thì chờ tối đa 15 giây rồi tự xoá, để người sau không bị dính.
+- Đang mượn đúng cuốn đó chưa trả thì báo đỏ, không mượn đôi. Hết sách thì báo đỏ.
+- Vẫn có thể **TẢI ẢNH QR**, hoặc nhập mã / tên sách rồi Enter, hoặc bấm **GHI NHẬN THỦ CÔNG**.
+
+## Thêm sách có ảnh mã QR
+- Kho sách → **THÊM SÁCH** → **THÊM ẢNH MÃ QR**: máy đọc nội dung QR (VD: tên sách), điền tên nếu còn trống và lưu cùng sách.
+- Không tải ảnh QR thì hệ thống tự tạo QR thật từ mã sách. Quét theo: mã sách, nội dung QR đã lưu hoặc tên sách (không phân biệt hoa thường, dấu).
+
+## Nền tuỳ chỉnh
+- Nút **NỀN** ở thanh trên: tải ảnh hoặc video (tối đa 150MB), chọn màu có sẵn, chỉnh độ tối, bật/tắt hiệu ứng mưa. Lưu trên từng máy.
 
 ## Cấu trúc
 ```
@@ -28,6 +35,8 @@ js/qr.js          quét QR sách, tìm sách theo mã/tên
 js/scanner.js     màn hình quét mượn/trả + vòng quét camera
 js/inventory.js   kho sách + đánh giá
 js/admin.js       gia hạn, quá hạn, log
+js/addbook.js      thêm sách + ảnh QR
+js/custombg.js    nền tuỳ chỉnh
 js/enroll.js      đăng ký khuôn mặt học sinh
 js/events.js      xử lý sự kiện
 js/background.js  hiệu ứng mưa

@@ -15,7 +15,7 @@ function normalizeText(value) {
     .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-// Tìm sách theo mã trước, không có thì theo tên
+// Tìm sách theo mã trước, rồi nội dung QR đã lưu, cuối cùng theo tên
 function findBookByText(text) {
   const raw = String(text || '').trim();
   if (!raw) return null;
@@ -23,7 +23,9 @@ function findBookByText(text) {
   const byCode = state.books.find(b => b.code.toLowerCase() === lower);
   if (byCode) return byCode;
   const norm = normalizeText(raw);
-  return state.books.find(b => normalizeText(b.title) === norm) || null;
+  return state.books.find(b => b.qrText && normalizeText(b.qrText) === norm)
+    || state.books.find(b => normalizeText(b.title) === norm)
+    || null;
 }
 
 // Đọc QR từ 1 nguồn (video/ảnh), thu nhỏ để quét nhanh
@@ -77,16 +79,13 @@ function applyQrResult(result, { allowAuto = true } = {}) {
   updateCameraHudPreview();
   showToast(`Đã quét: ${book.title}`, 'success');
 
-  const autoOn = document.getElementById('toggleAutoConfirm').checked;
-  if (allowAuto && autoOn && document.getElementById('selectFaceStudent').value) {
-    executeScanTransaction();
-  } else {
-    playSignalSound(true);
-  }
+  playSignalSound(true);
+  if (allowAuto) tryAutoConfirm();
 }
 
 // Gọi trong vòng quét camera
 function scanQrOnVideo(video) {
+  if (Date.now() < signalHoldUntil) return; // đang hiện kết quả giao dịch
   try {
     const result = decodeQrFrom(video, video.videoWidth, video.videoHeight);
     if (result) applyQrResult(result);
